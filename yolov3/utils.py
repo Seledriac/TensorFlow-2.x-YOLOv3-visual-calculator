@@ -76,6 +76,8 @@ def read_class_names(class_file_name):
     return names
 
 def image_preprocess(image, target_size, gt_boxes=None):
+    if gt_boxes is not None:
+        gt_boxes_tmp = np.array([list(map(int, gt_box[:-1])) for gt_box in gt_boxes])
     ih, iw    = target_size
     h,  w, _  = image.shape
 
@@ -92,9 +94,10 @@ def image_preprocess(image, target_size, gt_boxes=None):
         return image_paded
 
     else:
-        gt_boxes[:, [0, 2]] = gt_boxes[:, [0, 2]] * scale + dw
-        gt_boxes[:, [1, 3]] = gt_boxes[:, [1, 3]] * scale + dh
-        return image_paded, gt_boxes
+        gt_boxes_tmp[:, [0, 2]] = gt_boxes_tmp[:, [0, 2]] * scale + dw
+        gt_boxes_tmp[:, [1, 3]] = gt_boxes_tmp[:, [1, 3]] * scale + dh
+        gt_boxes_tmp = np.array([list(map(int, box_tmp)) + [box[-1]] for box_tmp, box in zip(gt_boxes_tmp, gt_boxes)])
+        return image_paded, gt_boxes_tmp
 
 
 def draw_bbox(image, bboxes, CLASSES=YOLO_COCO_CLASSES, show_label=True, show_confidence = True, Text_colors=(255,255,0), rectangle_colors=''):   
@@ -138,8 +141,13 @@ def draw_bbox(image, bboxes, CLASSES=YOLO_COCO_CLASSES, show_label=True, show_co
             cv2.rectangle(image, (x1, y1), (x1 + text_width, y1 - text_height - baseline), bbox_color, thickness=cv2.FILLED)
 
             # put text above rectangle
-            cv2.putText(image, label, (x1, y1-4), cv2.FONT_HERSHEY_COMPLEX_SMALL,
-                        fontScale, Text_colors, bbox_thick, lineType=cv2.LINE_AA)
+            if str(label) == 'd':
+                cv2.putText(image, '&#0247', (x1, y1 - 4), cv2.FONT_HERSHEY_COMPLEX_SMALL,
+                            fontScale, Text_colors, bbox_thick, lineType=cv2.LINE_AA)
+            else:
+                cv2.putText(image, label, (x1, y1-4), cv2.FONT_HERSHEY_COMPLEX_SMALL,
+                            fontScale, Text_colors, bbox_thick, lineType=cv2.LINE_AA)
+
 
     return image
 
@@ -244,7 +252,7 @@ def postprocess_boxes(pred_bbox, original_image, input_size, score_threshold):
     return np.concatenate([coors, scores[:, np.newaxis], classes[:, np.newaxis]], axis=-1)
 
 
-def detect_image(YoloV3, image_path, output_path, input_size=416, show=False, CLASSES=YOLO_COCO_CLASSES, score_threshold=0.3, iou_threshold=0.45, rectangle_colors=''):
+def detect_image(YoloV3, image_path, output_path, input_size=416, show=False, CLASSES=YOLO_COCO_CLASSES, score_threshold=0.3, iou_threshold=0.45, rectangle_colors='', calculate=False):
     original_image      = cv2.imread(image_path)
     original_image      = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
     original_image      = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
@@ -261,6 +269,19 @@ def detect_image(YoloV3, image_path, output_path, input_size=416, show=False, CL
 
     image = draw_bbox(original_image, bboxes, CLASSES=CLASSES, rectangle_colors=rectangle_colors)
 
+    if calculate:
+        # get the list of the detected signs in left to right order in "positions"
+        positions = sorted([(bbox[0],bbox[5]) for bbox in bboxes])
+        classes = read_class_names(CLASSES)
+        signs = [classes[int(position[1])] for position in positions]
+        try:
+            result = str(eval("".join(signs).replace("x","*").replace("d","/")))
+        except SyntaxError:
+            result = "Invalid Operation"
+        image = draw_bbox(original_image, bboxes, CLASSES=CLASSES, rectangle_colors=rectangle_colors)
+        image = cv2.putText(image, f"Result = {result}", (0, 30),
+                            cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 255), 2)
+
     if output_path != '': cv2.imwrite(output_path, image)
     if show:
         # Show the image
@@ -272,7 +293,7 @@ def detect_image(YoloV3, image_path, output_path, input_size=416, show=False, CL
         
     return image
 
-def detect_video(YoloV3, video_path, output_path, input_size=416, show=False, CLASSES=YOLO_COCO_CLASSES, score_threshold=0.3, iou_threshold=0.45, rectangle_colors=''):
+def detect_video(YoloV3, video_path, output_path, input_size=416, show=False, CLASSES=YOLO_COCO_CLASSES, score_threshold=0.3, iou_threshold=0.45, rectangle_colors='', calculate=False):
     times = []
     vid = cv2.VideoCapture(video_path)
 
@@ -303,14 +324,27 @@ def detect_video(YoloV3, video_path, output_path, input_size=416, show=False, CL
 
         bboxes = postprocess_boxes(pred_bbox, original_image, input_size, score_threshold)
         bboxes = nms(bboxes, iou_threshold, method='nms')
-        
-        times.append(t2-t1)
-        times = times[-20:]
-        print("Time: {:.2f}ms".format(sum(times)/len(times)*1000))
 
-        image = draw_bbox(original_image, bboxes, CLASSES=CLASSES, rectangle_colors=rectangle_colors)
-        image = cv2.putText(image, "Time: {:.2f}ms".format(sum(times)/len(times)*1000), (0, 30),
-                          cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 255), 2)
+        if calculate:
+            # get the list of the detected signs in left to right order in "positions"
+            positions = sorted([(bbox[0],bbox[5]) for bbox in bboxes])
+            classes = read_class_names(CLASSES)
+            signs = [classes[int(position[1])] for position in positions]
+            try:
+                result = str(eval("".join(signs).replace("x","*").replace("d","/")))
+            except SyntaxError:
+                result = "Invalid Operation"
+            frame = draw_bbox(original_image, bboxes, CLASSES=CLASSES, rectangle_colors=rectangle_colors)
+            frame = cv2.putText(frame, f"Result = {result}", (0, 30),
+                                cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 255), 2)
+        else:                
+            times.append(t2-t1)
+            times = times[-20:]
+            print("Time: {:.2f}ms".format(sum(times)/len(times)*1000))
+
+            image = draw_bbox(original_image, bboxes, CLASSES=CLASSES, rectangle_colors=rectangle_colors)
+            image = cv2.putText(image, "Time: {:.2f}ms".format(sum(times)/len(times)*1000), (0, 30),
+                            cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 255), 2)
 
         if output_path != '': out.write(image)
         if show:
@@ -321,16 +355,16 @@ def detect_video(YoloV3, video_path, output_path, input_size=416, show=False, CL
 
     cv2.destroyAllWindows()
 
-# detect from webcam
-def detect_realtime(YoloV3, output_path, input_size=416, show=False, CLASSES=YOLO_COCO_CLASSES, score_threshold=0.3, iou_threshold=0.45, rectangle_colors=''):
+# detect from live video
+def detect_realtime(YoloV3, output_path, int_cap=0, input_size=416, show=False, CLASSES=YOLO_COCO_CLASSES, score_threshold=0.3, iou_threshold=0.45, rectangle_colors='', calculate=False):
     times = []
-    vid = cv2.VideoCapture(0)
+    vid = cv2.VideoCapture(int_cap)
 
     # by default VideoCapture returns float instead of int
     width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = int(vid.get(cv2.CAP_PROP_FPS))
-    codec = cv2.VideoWriter_fourcc(*'XVID')
+    codec = cv2.VideoWriter_fourcc(*'MP4V')
     out = cv2.VideoWriter(output_path, codec, fps, (width, height)) # output_path must be .mp4
 
     while True:
@@ -353,20 +387,34 @@ def detect_realtime(YoloV3, output_path, input_size=416, show=False, CLASSES=YOL
 
         bboxes = postprocess_boxes(pred_bbox, original_frame, input_size, score_threshold)
         bboxes = nms(bboxes, iou_threshold, method='nms')
-        
-        times.append(t2-t1)
-        times = times[-20:]
-        print("Time: {:.2f}ms".format(sum(times)/len(times)*1000))
 
-        frame = draw_bbox(original_frame, bboxes, CLASSES=CLASSES, rectangle_colors=rectangle_colors)
-        frame = cv2.putText(frame, "Time: {:.2f}ms".format(sum(times)/len(times)*1000), (0, 30),
-                          cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 255), 2)
+        if calculate:
+            # get the list of the detected signs in left to right order in "positions"
+            positions = sorted([(bbox[0],bbox[5]) for bbox in bboxes])
+            classes = read_class_names(CLASSES)
+            signs = [classes[int(position[1])] for position in positions]
+            try:
+                result = str(eval("".join(signs).replace("x","*").replace("d","/")))
+            except SyntaxError:
+                result = "Invalid Operation"
+            frame = draw_bbox(original_frame, bboxes, CLASSES=CLASSES, rectangle_colors=rectangle_colors)
+            frame = cv2.putText(frame, f"Result = {result}", (0, 30),
+                                cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 255), 2)
+        else:
+            times.append(t2-t1)
+            times = times[-20:]
+            print("Prediction Time: {:.2f}ms".format(sum(times)/len(times)*1000))
+            frame = draw_bbox(original_frame, bboxes, CLASSES=CLASSES, rectangle_colors=rectangle_colors)
+            frame = cv2.putText(frame, "Prediction Time: {:.2f}ms".format(sum(times)/len(times)*1000), (0, 30),
+                                cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 255), 2)
 
-        if output_path != '': out.write(frame)
+        if output_path != '':
+            out.write(frame)
         if show:
             cv2.imshow('output', frame)
             if cv2.waitKey(25) & 0xFF == ord("q"):
                 cv2.destroyAllWindows()
                 break
-
+    vid.release()
+    out.release()
     cv2.destroyAllWindows()

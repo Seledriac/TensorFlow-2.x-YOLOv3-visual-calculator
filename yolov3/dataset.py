@@ -53,7 +53,8 @@ class Dataset(object):
             line = annotation.split()
             image_path, index = "", 1
             for i, one_line in enumerate(line):
-                if not one_line.replace(",","").isnumeric():
+                test = one_line.replace(",","")
+                if not test.isnumeric() and str(test[-1]) != '+' and str(test[-1]) != '-' and str(test[-1]) != 'x' and str(test[-1]) != 'd':
                     if image_path != "": image_path += " "
                     image_path += one_line
                 else:
@@ -116,18 +117,20 @@ class Dataset(object):
                 raise StopIteration
 
     def random_horizontal_flip(self, image, bboxes):
+        bboxes_tmp = np.array([list(map(int,bbox[:-1])) for bbox in bboxes])
         if random.random() < 0.5:
             _, w, _ = image.shape
             image = image[:, ::-1, :]
-            bboxes[:, [0,2]] = w - bboxes[:, [2,0]]
+            bboxes_tmp[:, [0,2]] = w - bboxes_tmp[:, [2,0]]
 
-        return image, bboxes
+        bboxes_tmp = np.array([list(map(int, box_tmp)) + [box[-1]] for box_tmp,box in zip(bboxes_tmp,bboxes)])
+        return image, bboxes_tmp
 
     def random_crop(self, image, bboxes):
+        bboxes_tmp = np.array([list(map(int, bbox[:-1])) for bbox in bboxes])
         if random.random() < 0.5:
             h, w, _ = image.shape
-            max_bbox = np.concatenate([np.min(bboxes[:, 0:2], axis=0), np.max(bboxes[:, 2:4], axis=0)], axis=-1)
-
+            max_bbox = np.concatenate([np.min(bboxes_tmp[:, 0:2], axis=0), np.max(bboxes_tmp[:, 2:4], axis=0)], axis=-1)
             max_l_trans = max_bbox[0]
             max_u_trans = max_bbox[1]
             max_r_trans = w - max_bbox[2]
@@ -140,16 +143,17 @@ class Dataset(object):
 
             image = image[crop_ymin : crop_ymax, crop_xmin : crop_xmax]
 
-            bboxes[:, [0, 2]] = bboxes[:, [0, 2]] - crop_xmin
-            bboxes[:, [1, 3]] = bboxes[:, [1, 3]] - crop_ymin
+            bboxes_tmp[:, [0, 2]] = bboxes_tmp[:, [0, 2]] - crop_xmin
+            bboxes_tmp[:, [1, 3]] = bboxes_tmp[:, [1, 3]] - crop_ymin
 
-        return image, bboxes
+        bboxes_tmp = np.array([list(map(int, box_tmp)) + [box[-1]] for box_tmp,box in zip(bboxes_tmp,bboxes)])
+        return image, bboxes_tmp
 
     def random_translate(self, image, bboxes):
+        bboxes_tmp = np.array([list(map(int, bbox[:-1])) for bbox in bboxes])
         if random.random() < 0.5:
             h, w, _ = image.shape
-            max_bbox = np.concatenate([np.min(bboxes[:, 0:2], axis=0), np.max(bboxes[:, 2:4], axis=0)], axis=-1)
-
+            max_bbox = np.concatenate([np.min(bboxes_tmp[:, 0:2], axis=0), np.max(bboxes_tmp[:, 2:4], axis=0)], axis=-1)
             max_l_trans = max_bbox[0]
             max_u_trans = max_bbox[1]
             max_r_trans = w - max_bbox[2]
@@ -161,10 +165,11 @@ class Dataset(object):
             M = np.array([[1, 0, tx], [0, 1, ty]])
             image = cv2.warpAffine(image, M, (w, h))
 
-            bboxes[:, [0, 2]] = bboxes[:, [0, 2]] + tx
-            bboxes[:, [1, 3]] = bboxes[:, [1, 3]] + ty
+            bboxes_tmp[:, [0, 2]] = bboxes_tmp[:, [0, 2]] + tx
+            bboxes_tmp[:, [1, 3]] = bboxes_tmp[:, [1, 3]] + ty
 
-        return image, bboxes
+        bboxes_tmp = np.array([list(map(int, box_tmp)) + [box[-1]] for box_tmp,box in zip(bboxes_tmp,bboxes)])
+        return image, bboxes_tmp
 
     def parse_annotation(self, annotation):
         if TRAIN_LOAD_IMAGES_TO_RAM:
@@ -173,7 +178,7 @@ class Dataset(object):
             image_path = annotation[0]
             image = cv2.imread(image_path)
             
-        bboxes = np.array([list(map(int, box.split(','))) for box in annotation[1]])
+        bboxes = np.array([list(map(int, box.split(',')[:-1])) + [box[-1]] for box in annotation[1]])
 
         if self.data_aug:
             image, bboxes = self.random_horizontal_flip(np.copy(image), np.copy(bboxes))
@@ -189,8 +194,22 @@ class Dataset(object):
                            5 + self.num_classes)) for i in range(3)]
         bboxes_xywh = [np.zeros((self.max_bbox_per_scale, 4)) for _ in range(3)]
         bbox_count = np.zeros((3,))
-
         for bbox in bboxes:
+
+            try:
+                ind = bbox[4]
+                ind = int(ind)
+            except ValueError:
+                if ind == '+':
+                    ind = 10
+                elif ind == '-':
+                    ind = 11
+                elif ind == 'x':
+                    ind = 12
+                elif ind == 'd':
+                    ind = 13
+            bbox = np.array(list(map(int,bbox[:4])) + [ind])
+
             bbox_coor = bbox[:4]
             bbox_class_ind = bbox[4]
 

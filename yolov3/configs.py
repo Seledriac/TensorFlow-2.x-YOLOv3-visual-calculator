@@ -25,11 +25,11 @@ YOLO_ANCHORS                = [[[10,  13], [16,   30], [33,   23]],
 TRAIN_YOLO_TINY             = False
 TRAIN_SAVE_BEST_ONLY        = True # saves only best model according validation loss (True recommended)
 TRAIN_SAVE_CHECKPOINT       = False # saves all best validated checkpoints in training process (may require a lot disk space) (False recommended)
-TRAIN_CLASSES               = "mnist/mnist.names"
-TRAIN_ANNOT_PATH            = "mnist/mnist_train.txt"
+TRAIN_CLASSES               = "calculator_dataset/calculator.names"
+TRAIN_ANNOT_PATH            = "calculator_dataset/calculator_train.txt"
 TRAIN_LOGDIR                = "log"
 TRAIN_CHECKPOINTS_FOLDER    = "checkpoints"
-TRAIN_MODEL_NAME            = "yolov3_custom"
+TRAIN_MODEL_NAME            = "yolov3_calculator"
 TRAIN_LOAD_IMAGES_TO_RAM    = False # faster training, but need more RAM
 TRAIN_BATCH_SIZE            = 8
 TRAIN_INPUT_SIZE            = 416
@@ -42,7 +42,7 @@ TRAIN_WARMUP_EPOCHS         = 2
 TRAIN_EPOCHS                = 100
 
 # TEST options
-TEST_ANNOT_PATH             = "mnist/mnist_test.txt"
+TEST_ANNOT_PATH             = "calculator_dataset/calculator_test.txt"
 TEST_BATCH_SIZE             = 4
 TEST_INPUT_SIZE             = 416
 TEST_DATA_AUG               = False

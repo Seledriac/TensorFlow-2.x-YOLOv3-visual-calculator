@@ -1,4 +1,18 @@
-# TensorFlow-2.x-YOLOv3 tutorial
+# Visual calculator detecting basic arithmetic drew with Paint
+
+This repository contains a "calculator_dataset" of numbers and "+", "-", "x", "(divide_sign)" operators drew with a thin "Paint" style pen
+Use it in a similar way than the "mnist" implementation : 
+- execute the "make_data.py" script
+- use the "show_image.py" and "data_inspection.py" scripts to have an idea of the dataset
+- train a YOLOV3 model to fit this data with the "train.py" script (the "configs.py" file is already configured)
+- use the "detect_operators.py" script to test the detection performances of the model trained
+- and once your model detects numbers and operators correctly, you can use the "calculator.py" script to visually solve handwritten operations
+
+<p align="center">
+    <img width="100%" src="IMAGES/calculator_example.png" style="max-width:100%;"></a>
+</p>
+
+# TensorFlow-2.x-YOLOv3 tutorial (original README)
 
 YOLOv3 implementation in TensorFlow 2.x, with support for training, transfer training.
 
