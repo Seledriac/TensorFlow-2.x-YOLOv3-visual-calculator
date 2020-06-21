@@ -1,6 +1,7 @@
 # Visual calculator detecting basic arithmetic drew with Paint
 
-This repository contains a "calculator_dataset" of numbers and "+", "-", "x", "(divide_sign)" operators drew with a thin "Paint" style pen
+This repository contains a "calculator_dataset" of numbers and "+", "-", "x", "÷" operators drew with a thin "Paint" style pen.
+
 Use it in a similar way than the "mnist" implementation : 
 - execute the "make_data.py" script
 - use the "show_image.py" and "data_inspection.py" scripts to have an idea of the dataset structure
