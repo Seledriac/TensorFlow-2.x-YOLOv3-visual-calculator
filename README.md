@@ -5,7 +5,7 @@ This repository contains a "calculator_dataset" of numbers and "+", "-", "x", "Ã
 Use it in a similar way than the "mnist" implementation : 
 - execute the "make_data.py" script
 - use the "show_image.py" and "data_inspection.py" scripts to have an idea of the dataset structure
-- train a YOLOV3 model to fit this dataset with the "train.py" script (the "configs.py" file is already configured)
+- train a YOLOV3 model to fit this dataset with the "train.py" script (the "configs.py" file is already configured, but you will need pretrained YOLOV3 weights in your model_data folder)
 - use the "detect_operators.py" script to test the detection performances of the model trained
 - and once your model detects numbers and operators correctly, you can use the "calculator.py" script to visually solve handwritten basic arithmetic operations
 
