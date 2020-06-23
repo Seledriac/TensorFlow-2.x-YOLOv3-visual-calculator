@@ -1,4 +1,4 @@
-# Visual calculator detecting basic arithmetic drew with Paint
+# Visual calculator detecting basic handwritten arithmetic operations drew with Paint
 
 This repository contains a "calculator_dataset" of numbers and "+", "-", "x", "(divide_sign)" operators drew with a thin "Paint" style pen
 Use it in a similar way than the "mnist" implementation : 
