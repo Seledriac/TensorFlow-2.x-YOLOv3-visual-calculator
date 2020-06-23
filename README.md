@@ -9,9 +9,7 @@ Use it in a similar way than the "mnist" implementation :
 - use the "detect_operators.py" script to test the detection performances of the model trained
 - and once your model detects numbers and operators correctly, you can use the "calculator.py" script to visually solve handwritten basic arithmetic operations
 
-<p align="center">
-    <img width="100%" src="IMAGES/calculator_example.png" style="max-width:100%;"></a>
-</p>
+[![Visual calculator demo](https://j.gifs.com/zvDY6r.gif)](https://gifs.com/gif/visual-calculator-zvDY6r)
 
 # TensorFlow-2.x-YOLOv3 tutorial (original README)
 
